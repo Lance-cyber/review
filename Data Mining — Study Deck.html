@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Data Mining — Study Deck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0B1220;
+    --panel:#101B2D;
+    --panel-2:#152238;
+    --line:#233350;
+    --gold:#F0B94A;
+    --gold-dim:#8a6f2f;
+    --teal:#31C6B5;
+    --off:#E9EEF5;
+    --slate:#8CA0B8;
+    --danger:#E2665A;
+    --good:#4FCB8D;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 15% -10%, #16233b 0%, transparent 60%),
+      radial-gradient(900px 500px at 110% 10%, #12203a 0%, transparent 55%),
+      var(--ink);
+    color:var(--off);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    padding:calc(28px + env(safe-area-inset-top,0px)) 18px calc(60px + env(safe-area-inset-bottom,0px));
+  }
+  .wrap{max-width:820px;margin:0 auto;}
+
+  /* HEADER / SIGNATURE: depth gauge */
+  header{display:flex;align-items:center;gap:18px;margin-bottom:22px;}
+  .gauge{
+    position:relative;
+    width:46px;height:86px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    background:linear-gradient(180deg, #0d1830, #0a1526);
+    overflow:hidden;
+    flex-shrink:0;
+  }
+  .gauge-fill{
+    position:absolute; bottom:0; left:0; right:0;
+    background:linear-gradient(180deg, var(--teal), #1d8f83);
+    transition:height .5s ease;
+  }
+  .gauge-label{
+    position:absolute; top:4px; left:0; right:0; text-align:center;
+    font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--slate); letter-spacing:.02em;
+  }
+  h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:26px;
+    margin:0 0 4px;
+    letter-spacing:-.01em;
+  }
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--gold);
+  }
+  .sub{color:var(--slate); font-size:14px; margin-top:4px;}
+
+  /* MODE TABS */
+  .tabs{display:flex; gap:8px; margin-bottom:22px; border-bottom:1px solid var(--line); padding-bottom:0;}
+  .tab{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600; font-size:14px;
+    background:none; border:none; color:var(--slate);
+    padding:10px 4px 12px; cursor:pointer;
+    border-bottom:2px solid transparent;
+    margin-right:14px;
+    transition:color .2s;
+  }
+  .tab.active{color:var(--off); border-bottom-color:var(--gold);}
+  .tab:hover{color:var(--off);}
+
+  .panel{display:none;}
+  .panel.active{display:block;}
+
+  /* FLASHCARDS */
+  .deck-meta{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; font-size:13px; color:var(--slate);}
+  .deck-meta .count{font-family:'JetBrains Mono',monospace;}
+  .chip{
+    font-family:'JetBrains Mono',monospace; font-size:10px;
+    padding:3px 8px; border-radius:20px; border:1px solid var(--line);
+    color:var(--teal); text-transform:uppercase; letter-spacing:.06em;
+  }
+
+  .card-stage{perspective:1400px; margin-bottom:18px;}
+  .card{
+    position:relative;
+    min-height:250px;
+    border-radius:var(--radius);
+    cursor:pointer;
+    transform-style:preserve-3d;
+    transition:transform .5s cubic-bezier(.4,.2,.2,1);
+  }
+  .card.flipped{transform:rotateY(180deg);}
+  .face{
+    position:absolute; inset:0;
+    backface-visibility:hidden;
+    border-radius:var(--radius);
+    border:1px solid var(--line);
+    padding:28px 26px;
+    display:flex; flex-direction:column; justify-content:center;
+  }
+  .face-front{
+    background:linear-gradient(160deg, var(--panel-2), var(--panel));
+  }
+  .face-back{
+    background:linear-gradient(160deg, #17263f, #0e1a2d);
+    transform:rotateY(180deg);
+    border-color:var(--gold-dim);
+  }
+  .face-tag{
+    font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--slate); margin-bottom:14px;
+  }
+  .face-front .face-tag{color:var(--teal);}
+  .face-back .face-tag{color:var(--gold);}
+  .face-q{font-family:'Space Grotesk',sans-serif; font-size:20px; font-weight:600; line-height:1.4;}
+  .face-a{font-size:16px; line-height:1.55; color:var(--off);}
+  .hint{
+    position:absolute; bottom:14px; right:18px;
+    font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--slate); opacity:.7;
+  }
+
+  .nav-row{display:flex; gap:10px; align-items:center; justify-content:center;}
+  .btn{
+    font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:14px;
+    background:var(--panel-2); color:var(--off); border:1px solid var(--line);
+    padding:11px 18px; border-radius:10px; cursor:pointer;
+    transition:border-color .2s, transform .1s;
+  }
+  .btn:hover{border-color:var(--teal);}
+  .btn:active{transform:scale(.97);}
+  .btn.primary{background:var(--gold); color:#241a05; border-color:var(--gold);}
+  .btn.primary:hover{border-color:var(--gold);}
+  .btn.ghost{background:none;}
+  .btn:disabled{opacity:.35; cursor:not-allowed;}
+  .btn-icon{width:44px; padding:11px 0;}
+
+  .progress-dots{display:flex; justify-content:center; gap:5px; margin-top:16px; flex-wrap:wrap; max-width:420px; margin-left:auto; margin-right:auto;}
+  .dot{width:7px; height:7px; border-radius:50%; background:var(--line);}
+  .dot.seen{background:var(--teal);}
+  .dot.current{background:var(--gold); transform:scale(1.3);}
+
+  /* QUIZ */
+  .quiz-head{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px;}
+  .quiz-progress-track{height:6px; background:var(--panel-2); border-radius:4px; overflow:hidden; margin-bottom:22px; border:1px solid var(--line);}
+  .quiz-progress-fill{height:100%; background:linear-gradient(90deg, var(--teal), var(--gold)); transition:width .3s;}
+  .q-tag{font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--gold); margin-bottom:10px;}
+  .q-text{font-family:'Space Grotesk',sans-serif; font-size:19px; font-weight:600; margin-bottom:20px; line-height:1.45;}
+  .options{display:flex; flex-direction:column; gap:10px; margin-bottom:20px;}
+  .opt{
+    text-align:left;
+    background:var(--panel-2); border:1px solid var(--line); color:var(--off);
+    padding:14px 16px; border-radius:10px; font-size:15px; cursor:pointer;
+    font-family:'Inter',sans-serif;
+    transition:border-color .15s, background .15s;
+    display:flex; gap:10px; align-items:flex-start;
+  }
+  .opt:hover:not(:disabled){border-color:var(--teal);}
+  .opt .k{font-family:'JetBrains Mono',monospace; color:var(--slate); font-size:13px; flex-shrink:0;}
+  .opt.correct{border-color:var(--good); background:rgba(79,203,141,.12);}
+  .opt.incorrect{border-color:var(--danger); background:rgba(226,102,90,.12);}
+  .opt:disabled{cursor:default;}
+  .explain{
+    background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--gold);
+    padding:14px 16px; border-radius:8px; font-size:14px; color:var(--slate); line-height:1.5; margin-bottom:18px;
+    display:none;
+  }
+  .explain.show{display:block;}
+  .explain b{color:var(--off);}
+
+  .score-screen{text-align:center; padding:40px 10px;}
+  .score-num{font-family:'Space Grotesk',sans-serif; font-size:56px; font-weight:700; color:var(--gold);}
+  .score-label{color:var(--slate); font-size:14px; margin-bottom:26px;}
+  .score-msg{font-size:16px; margin-bottom:30px;}
+
+  footer{text-align:center; margin-top:40px; color:var(--slate); font-size:12px; font-family:'JetBrains Mono',monospace;}
+
+  @media (max-width:520px){
+    .card{min-height:290px;}
+    .face{padding:22px 18px;}
+    .face-q{font-size:18px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="gauge">
+      <div class="gauge-label">DEPTH</div>
+      <div class="gauge-fill" id="gaugeFill" style="height:0%"></div>
+    </div>
+    <div>
+      <div class="eyebrow">Prospector's Review</div>
+      <h1>Data Mining — Study Deck</h1>
+      <div class="sub">Ch.1 What is Data Mining + DMW 1.3–1.4 Problem Statements + Clustering, Classification, Association & Regression</div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" data-mode="cards">Flashcards</button>
+    <button class="tab" data-mode="quiz">Quiz</button>
+  </div>
+
+  <!-- FLASHCARDS PANEL -->
+  <section class="panel active" id="panel-cards">
+    <div class="deck-meta">
+      <span class="chip" id="cardTopicChip">Foundations</span>
+      <span class="count" id="cardCount">1 / 24</span>
+    </div>
+
+    <div class="card-stage">
+      <div class="card" id="flashcard">
+        <div class="face face-front">
+          <div class="face-tag">Term / Prompt</div>
+          <div class="face-q" id="cardFront"></div>
+          <div class="hint">tap to flip</div>
+        </div>
+        <div class="face face-back">
+          <div class="face-tag">Answer</div>
+          <div class="face-a" id="cardBack"></div>
+          <div class="hint">tap to flip back</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-row">
+      <button class="btn btn-icon" id="prevCard">←</button>
+      <button class="btn ghost" id="flipBtn">Flip</button>
+      <button class="btn btn-icon" id="shuffleCard">⤮</button>
+      <button class="btn btn-icon" id="nextCard">→</button>
+    </div>
+    <div class="progress-dots" id="dots"></div>
+  </section>
+
+  <!-- QUIZ PANEL -->
+  <section class="panel" id="panel-quiz">
+    <div id="quizActive">
+      <div class="quiz-head">
+        <span class="q-tag" id="quizTag">Question</span>
+        <span class="count" id="quizCount">1 / 36</span>
+      </div>
+      <div class="quiz-progress-track"><div class="quiz-progress-fill" id="quizProgressFill" style="width:0%"></div></div>
+      <div class="q-text" id="quizQ"></div>
+      <div class="options" id="quizOptions"></div>
+      <div class="explain" id="quizExplain"></div>
+      <div class="nav-row">
+        <button class="btn primary" id="quizNext" disabled>Next Question →</button>
+      </div>
+    </div>
+
+    <div class="score-screen" id="quizResult" style="display:none;">
+      <div class="eyebrow">Assay Complete</div>
+      <div class="score-num" id="scoreNum">0/12</div>
+      <div class="score-label">correct answers</div>
+      <div class="score-msg" id="scoreMsg"></div>
+      <button class="btn primary" id="retryQuiz">Run Again</button>
+    </div>
+  </section>
+
+  <footer>DATA MINING &amp; WAREHOUSING · SELF-STUDY TOOL</footer>
+</div>
+
+<script>
+const cards = [
+  {topic:"Foundations", front:"What is Data Mining? (formal definition)", back:"The process of discovering meaningful patterns, relationships, and knowledge from large volumes of data to support better decision-making."},
+  {topic:"Foundations", front:"What is the 'gold mining' analogy for Data Mining?", back:"Raw Data → Processing (analysis, ML, pattern-finding) → Useful Knowledge. Like mining ore, raw data alone has little value until it's refined."},
+  {topic:"Foundations", front:"Traditional Programming: what are the inputs and what is learned/given?", back:"Input + Rules (written by humans) → Output. The programmer tells the computer exactly what to do (e.g., grade formula)."},
+  {topic:"Foundations", front:"Machine Learning: what are the inputs and what is learned?", back:"Input + Data → the model learns patterns → Predictions. Rules are learned from data instead of written by humans (e.g., recommending products from purchase history)."},
+  {topic:"Foundations", front:"Supervised Learning — how does it work?", back:"The model learns from labeled examples (correct answers are provided), e.g., images labeled 'Apple', 'Dog', 'Car'."},
+  {topic:"Foundations", front:"Unsupervised Learning — how does it work?", back:"No labels are provided; the model discovers hidden patterns and groups similar data on its own."},
+  {topic:"Foundations", front:"Regression vs. Classification — what's the core difference?", back:"Regression predicts a continuous NUMBER (e.g., house price, salary, temperature). Classification predicts a CATEGORY/class (e.g., pass/fail, spam/not spam, fraud/legit)."},
+  {topic:"Foundations", front:"What does Clustering do?", back:"Groups data points with similar behaviors/characteristics together automatically, WITHOUT predefined labels (unlike supervised learning) — e.g., segmenting customers into 'Budget Shoppers', 'Premium Customers', etc."},
+  {topic:"Foundations", front:"What is Reinforcement Learning?", back:"An agent learns through trial and error by interacting with its environment, improving through rewards and feedback — cycle: Observe → Act → Reward → Learn → Repeat."},
+  {topic:"Foundations", front:"Give 3 real-world apps of ML mentioned in the deck.", back:"Any 3 of: Netflix (recommendations), Gmail (spam detection), Facebook (news feed), Siri (voice assistant), Alexa (smart home), Google Maps (traffic prediction), Uber (ride matching), GCash (fraud detection)."},
+  {topic:"Process", front:"What is the key idea behind crafting a data mining problem statement?", back:"Data mining begins with a QUESTION that can be answered using data — not with picking an algorithm first."},
+  {topic:"Process", front:"Give an example of a WEAK vs. STRONG problem statement.", back:"Weak: 'We want to analyze student performance' (vague, no variables/target/decision). Strong: 'Can attendance, quiz scores, and LMS activity predict final grade risk?' (has variables, prediction goal, decision)."},
+  {topic:"Process", front:"List the 7 steps in solving a data mining problem (in order).", back:"1) Practical motivation & sample collection, 2) Problem formulation & data preparation, 3) Statistical description & exploratory analysis, 4) Pattern recognition & analytical visualization, 5) Machine learning & algorithmic optimization, 6) Statistical inference & information presentation, 7) Intelligence decision & ethical consideration."},
+  {topic:"Process", front:"Step 1 (Practical Motivation) — what questions form the 'decision gate'?", back:"Is the problem related to data? Can it be solved using data in practice? What real-world decision will improve if we answer it?"},
+  {topic:"Process", front:"Step 1.2 (Data Collection) — what two questions must the data pass?", back:"1) Does the data match the problem? (relevant variables only) 2) Does the data represent reality? (sample reflects the real population)."},
+  {topic:"Process", front:"Step 2 (Problem Formulation) — what makes a question a 'data mining problem'?", back:"It connects input data to a pattern, prediction, group, anomaly, or action — e.g., 'Can age, blood type, location, travel history predict infection risk?' (NOT 'How do I know if someone is infected?', which is diagnosis, not DM formulation)."},
+  {topic:"Process", front:"Step 2.2 (Data Preparation) — what data condition is 'best' vs. 'problematic'?", back:"Best starting point: clean data in a grid/tabular format. Problematic: noisy data — must be cleaned before modeling. Data from multiple sources is useful but must be integrated and cleaned."},
+  {topic:"Process", front:"Step 3 (Exploring the Data) — what do we check before modeling?", back:"Mean & median, variance & spread, distribution & outliers, missing/unusual values. 'Before we predict, classify, cluster, or detect anomalies, we first understand what the data is saying.'"},
+  {topic:"Process", front:"Step 4 — two purposes of data visualization?", back:"Explore/Calculate (audience still needs to inspect & reason) and Communicate (message is clear and must guide decision-making). 'Visualization is not decoration; it is evidence made visible.'"},
+  {topic:"Process", front:"Step 4 — the 4 visualization question categories?", back:"Comparison (which is higher?), Composition (what parts make the whole?), Distribution (how are values spread?), Relationship (how do variables move together?)."},
+  {topic:"Process", front:"Step 5 — Descriptive vs. Inferential Analytics?", back:"Descriptive: describes the dataset/population itself (e.g., 'Average completion rate is 68%'). Inferential: uses sample evidence to draw conclusions about a larger group (e.g., 'this pattern may generalize to similar classes')."},
+  {topic:"Process", front:"Step 6 (Statistical Inference) — what two things must a result include?", back:"1) Generalize the learning procedure/model. 2) Estimate the confidence of the prediction. A result should be presented with limits, assumptions, and confidence — not blind certainty."},
+  {topic:"Process", front:"Step 7 (Actionable Intelligence & Ethics) — three roles/lenses needed?", back:"Domain Expert (interprets the problem, decides what's practical), Legal + Privacy Lens (protects confidential data, respects individuals), Actionable Decision (turns analysis into responsible real-world action)."},
+  {topic:"Question Types", front:"Match: 'How much? How many?' → which DM question type & model family?", back:"Numeric prediction → REGRESSION. Model family: Linear regression, regression trees, random forest regression, neural network regression."},
+  {topic:"Question Types", front:"Match: 'Type A or Type B?' → which DM question type & model family?", back:"Class prediction → CLASSIFICATION. Model family: Logistic regression, tree-based classification (e.g., Random Forest), neural network classification."},
+  {topic:"Question Types", front:"Match: 'How is this organized?' → which DM question type & model family?", back:"Grouping/segmentation → CLUSTERING. Model family: K-Means, hierarchical clustering, distance measures (Euclidean or cosine)."},
+  {topic:"Question Types", front:"Match: 'Is it weird behavior?' → which DM question type & model family?", back:"Unusual/suspicious cases → ANOMALY DETECTION. Model family: cluster-analysis-based detection, nearest neighbour detection, Support Vector Machine detection. Use cases: intrusion detection, social media, patient monitoring."},
+  {topic:"Question Types", front:"Match: 'What should be done next?' → which DM question type & model family?", back:"Best-action learning → REINFORCEMENT LEARNING. Model family: Monte Carlo, State–Action–Reward, Q-Learning, Deep Reinforcement Learning."},
+  {topic:"Question Types", front:"What is the Problem Statement Template?", back:"'Can [input data/variables] help [data mining task] [target outcome] so that [decision or action]?' Example: 'Can attendance, quiz scores, and LMS activity predict students at risk so that instructors can provide early intervention?'"},
+  {topic:"Clustering", front:"What is a cluster? What is clustering?", back:"A cluster is a group of objects belonging to the same class: similar objects share a cluster, dissimilar ones go in another. Clustering is the process of grouping abstract objects into classes of similar objects."},
+  {topic:"Clustering", front:"Clustering: 3 points to remember", back:"1) A cluster can be treated as one group. 2) Data is first partitioned into groups by similarity, then labels are assigned to the groups. 3) Main advantage over classification: it adapts to changes and helps single out useful features that distinguish groups."},
+  {topic:"Clustering", front:"Name applications of cluster analysis.", back:"Market research, pattern recognition, data analysis, image processing; discovering customer groups for marketers; biology (plant/animal taxonomies, grouping genes); land-use identification from earth observation data; grouping houses by type, value, location; classifying web documents; outlier detection (e.g., credit card fraud); gaining insight into data distribution."},
+  {topic:"Clustering", front:"List the 6 requirements of clustering in data mining.", back:"1) Scalability, 2) Ability to deal with different kinds of attributes, 3) Discovery of clusters with arbitrary shape, 4) High dimensionality, 5) Ability to deal with noisy data, 6) Interpretability."},
+  {topic:"Clustering", front:"Why must clustering discover clusters of arbitrary shape?", back:"Algorithms bound to distance measures tend to find only spherical clusters of small size; a good algorithm should detect clusters of any shape."},
+  {topic:"Clustering", front:"List the 6 categories of clustering methods.", back:"Partitioning, Hierarchical, Density-based, Grid-based, Model-based, and Constraint-based methods."},
+  {topic:"Clustering", front:"Partitioning Method: how does it work and what are its requirements?", back:"Given n objects, it builds k partitions (k ≤ n), each a cluster. Requirements: each group has at least one object, and each object belongs to exactly one group. It creates an initial partitioning, then uses iterative relocation, moving objects between groups to improve it."},
+  {topic:"Clustering", front:"Hierarchical Methods: agglomerative vs. divisive?", back:"Agglomerative (bottom-up): start with each object as its own group and keep merging the closest until all are merged or a termination condition holds. Divisive (top-down): start with all objects in one cluster and keep splitting until each object is alone or a termination condition holds."},
+  {topic:"Clustering", front:"Main weakness of hierarchical clustering? How can quality be improved?", back:"It is rigid: once a merge or split is done, it can never be undone. Improve it by (1) carefully analyzing object linkages at each partitioning, or (2) integrating hierarchical agglomeration with micro-clustering, then performing macro-clustering on the micro-clusters."},
+  {topic:"Clustering", front:"Density-based Method: core idea?", back:"Keep growing a cluster as long as the density in its neighborhood exceeds a threshold. For each data point, the radius of a given cluster must contain at least a minimum number of points."},
+  {topic:"Clustering", front:"Grid-based Method: how does it work and what is its advantage?", back:"The object space is quantized into a finite number of cells forming a grid. Advantage: fast processing time, which depends only on the number of cells in each dimension of the quantized space, not on the number of data objects."},
+  {topic:"Clustering", front:"Model-based Method: how does it work?", back:"A model is hypothesized for each cluster to find the best fit of data for that model. It locates clusters by clustering the density function (reflecting spatial distribution of data points), can automatically determine the number of clusters using standard statistics, and accounts for noise or outliers, which yields robust clustering."},
+  {topic:"Clustering", front:"Constraint-based Method: how does it work?", back:"Clustering is performed by incorporating user- or application-oriented constraints (user expectations or properties of desired clustering results). Constraints give an interactive way of communicating with the clustering process and can be specified by the user or the application requirement."},
+  {topic:"Clustering", front:"Clustering vs. classification: key difference?", back:"Clustering is unsupervised: groups are discovered from similarity with no predefined labels (labels are assigned afterward). Classification is supervised: it predicts predefined classes from labeled examples."},
+  {topic:"Classification", front:"What is a classification tree and how is it used?", back:"A tree of yes/no questions: at each node you answer the question and follow that branch until you reach a leaf that gives the predicted class. It can predict an unknown data instance by asking only a few simple questions."},
+  {topic:"Classification", front:"Advantage of a classification tree?", back:"It doesn't require a lot of information about the data to create a tree that can be very accurate and very informative."},
+  {topic:"Classification", front:"What is the 'training set' concept in classification?", back:"Use a data set with known output values to build the model. For a new data point with an unknown output, put it through the model to produce the expected output."},
+  {topic:"Classification", front:"What is overfitting, and why do we need a test set?", back:"Overfitting: the model fits the training data too perfectly. The goal is to predict future unknowns, not perfectly predict values already known. A test set checks that accuracy doesn't drop on new data, so the model will predict future unknown values well."},
+  {topic:"Classification", front:"What is pruning and why is it done?", back:"Removing branches of the classification tree to counter overfitting. Larger data sets and more attributes make trees increasingly complex; a tree with leaves = rows x attributes fits only the existing training data and won't help predict future unknowns."},
+  {topic:"Classification", front:"What trade-off does pruning balance?", back:"Keep the tree as simple as possible (few nodes and leaves) while keeping it as accurate as possible."},
+  {topic:"Classification", front:"False Positive vs. False Negative?", back:"False positive: the model predicts positive but the actual value is negative. False negative: the model predicts negative but the actual value is positive."},
+  {topic:"Classification", front:"How do you decide an acceptable error percentage?", back:"It's up to the model creator and depends on the stakes. Heart monitors in a hospital need an extremely low error rate; mining made-up data for an article can tolerate a much higher one."},
+  {topic:"Association", front:"What is Association Analysis?", back:"Uses a set of transactions to discover rules that indicate the likely occurrence of an item based on the occurrences of other items in the transaction."},
+  {topic:"Association", front:"What is an Association Rule? Give an example.", back:"An implication of the form X -> Y, where X and Y are item sets. Example: {Milk, Diaper} -> {Beer}, with X = {Milk, Diaper} and Y = {Beer}."},
+  {topic:"Association", front:"What is the Apriori algorithm?", back:"An algorithm for frequent itemset mining and association rule learning over transactional databases. It finds frequent individual items and extends them to larger item sets as long as they appear often enough. The frequent itemsets can be used to determine association rules that highlight general trends. Proposed by Agrawal and Srikant in 1994; used in market basket analysis."},
+  {topic:"Association", front:"How does Apriori work (bottom-up)?", back:"Frequent subsets are extended one item at a time (candidate generation), and groups of candidates are tested against the data. It terminates when no further successful extensions are found."},
+  {topic:"Association", front:"Apriori key details: search, structure, pruning?", back:"Uses breadth-first search and a Hash tree to count candidate item sets efficiently. Generates candidates of length k from item sets of length k-1, prunes candidates that have an infrequent sub pattern (downward closure lemma), then scans the database to find which candidates are frequent."},
+  {topic:"Regression", front:"List the 5 characteristics of regression.", back:"1) Continuous target variable, 2) Error measurement (MSE, RMSE), 3) Model complexity (simple linear to complex nonlinear), 4) Overfitting and underfitting, 5) Interpretability (coefficients show strength and direction of relationships)."},
+  {topic:"Regression", front:"What do MSE and RMSE measure?", back:"Mean Squared Error and Root Mean Squared Error quantify the difference between predicted and actual values."},
+  {topic:"Regression", front:"Predictor variable vs. response variable?", back:"Predictor (independent variable or feature) is used to predict the value of the response. Response (dependent variable) is the variable whose values are predicted or explained."},
+  {topic:"Regression", front:"Multicollinearity and outliers?", back:"Multicollinearity: two or more predictors are highly correlated, making coefficient estimation inaccurate. Outliers: points that deviate significantly from the rest and can substantially affect coefficients and model performance."},
+  {topic:"Regression", front:"Underfitting vs. overfitting in regression?", back:"Underfitting: model too simple, poor on both training and test data. Overfitting: model too complex and captures noise in the training data, so it generalizes poorly to unseen data."},
+  {topic:"Regression", front:"Coefficient and residuals?", back:"Coefficient: the change in the response for a one-unit change in the predictor, holding other variables constant. Residuals: differences between observed and predicted values, used to assess goodness of fit and detect patterns showing the model is inadequate."},
+  {topic:"Regression", front:"Types of regression: simple, multiple, nonlinear?", back:"Simple: one dependent variable predicted from one independent variable (sales from ad spend). Multiple: two or more independent variables (house price from square footage, bedrooms, location). Nonlinear: the relationship isn't linear (plant growth over time, e.g., logistic growth model)."},
+  {topic:"Regression", front:"Linear regression and polynomial regression?", back:"Linear: assumes a linear relationship and finds the best-fitting straight line, minimizing the sum of squared differences between observed and predicted values. Polynomial: fits a polynomial function instead of a straight line to capture nonlinear relationships (e.g., projectile trajectory)."},
+  {topic:"Regression", front:"Ridge vs. Lasso regression?", back:"Both are regularization techniques that prevent overfitting in linear models by adding a penalty term. Ridge keeps coefficients small, reducing variance and making the model robust to noisy data. Lasso forces some coefficients to exactly zero, giving feature selection (useful with many predictors, e.g., customer churn)."},
+  {topic:"Regression", front:"Decision tree regression vs. random forest regression?", back:"Decision tree: non-parametric, splits data into subsets to minimize variance of the target within each subset; clear and interpretable (used car prices). Random forest: an ensemble of many decision trees whose average prediction is output; robust to overfitting and captures complex nonlinear relationships (retail sales)."},
+  {topic:"Regression", front:"What is Support Vector Regression (SVR)?", back:"An algorithm based on support vector machines. It maps data into a higher-dimensional space and finds the hyperplane that maximizes the margin between predicted and actual values. Effective in high-dimensional spaces and with outliers (e.g., building energy consumption)."},
+];
+
+const Q=(tag,q,options,correct,explain)=>({tag,q,options,correct,explain});
+const quiz = [
+Q("Concept","Which best defines Data Mining?",["Storing large data in a warehouse","Discovering meaningful patterns, relationships, and knowledge from large data to support decisions","Writing rules by hand for every case","Deleting noisy data"],1,"Data mining turns raw data into useful knowledge for better decision-making."),
+Q("Concept","How do Traditional Programming and Machine Learning differ?",["ML rules are written by humans","Traditional rules are learned from data","In traditional programming humans write the rules; in ML rules are learned from data","They are identical"],2,"Traditional: Input + Rules → Output. ML: Input + Data → learns patterns → predictions."),
+Q("Concept","What separates supervised from unsupervised learning?",["Supervised learns from labeled data; unsupervised finds patterns without labels","Supervised needs no data","Unsupervised uses rewards and penalties","Supervised only groups data"],0,"Labels (correct answers) are provided in supervised learning and absent in unsupervised."),
+Q("Concept","Which question–type pair is correct?",["'Type A or Type B?' – Regression","'How is this organized?' – Clustering","'Is it weird behavior?' – Classification","'What should be done next?' – Clustering"],1,"How much → regression; A or B → classification; organized → clustering; weird → anomaly detection; next action → reinforcement learning."),
+Q("Concept","Which is the correct first and last step of the 7-step process?",["Exploration → Visualization","Problem formulation → Statistical inference","Practical motivation & sample collection → Intelligence decision & ethical consideration","Machine learning → Data preparation"],2,"Step 1 is practical motivation & sample collection; Step 7 is intelligence decision & ethical consideration."),
+Q("Concept","The deck's main reminder for solving data mining problems is:",["Pick the newest algorithm first","Begin with the problem, not the algorithm","Collect as much data as possible","Skip exploration to save time"],1,"A clear question guides data, method, evaluation, and decision."),
+Q("Concept","The two checks in Step 1.2 (Data Collection) are:",["Is it big? Is it fast?","Does the data match the problem? Does it represent reality?","Is it free? Is it public?","Is it numeric? Is it clean?"],1,"Data must fit the question and reflect the real population."),
+Q("Concept","Which data form is the best starting point for many data mining tasks?",["Noisy data","Data in a grid (tabular) format","Unstructured scraps","Unintegrated multi-source data"],1,"Clean, structured grid data reduces confusion; noisy data must be cleaned first."),
+Q("Concept","Step 3 (Exploring the Data) examines:",["Mean, median, variance, distribution, outliers, missing values","Only the final prediction","Ethics approvals","Server hardware"],0,"Exploration prevents blind modeling: understand the data before predicting."),
+Q("Concept","A chart showing how two variables move together answers which visualization question?",["Comparison","Composition","Distribution","Relationship"],3,"Relationship = how variables move together; Comparison = which is higher; Composition = parts of a whole; Distribution = spread."),
+Q("Concept","'The average completion rate is 68%' is an example of:",["Inferential analytics","Descriptive analytics","Reinforcement learning","Anomaly detection"],1,"Descriptive describes the dataset; inferential generalizes from a sample to a larger group."),
+Q("Concept","Why does Step 6 (Statistical Inference) estimate prediction confidence?",["Algorithms are perfect","Learning algorithms are not perfect, so results need limits and confidence","To skip validation","To make charts prettier"],1,"Present results with limits, assumptions, and confidence, not blind certainty."),
+Q("Concept","Which pair is a model family for anomaly detection?",["Linear regression","Q-Learning","Nearest neighbour detection / SVM","Logistic regression"],2,"Anomaly detection: cluster-based, nearest neighbour, SVM. Q-Learning is reinforcement learning."),
+Q("Concept","In the problem statement template, what does the 'so that…' clause give?",["The input variables","The decision or action the analysis supports","The algorithm","The dataset size"],1,"Template: Can [data] help [task] [outcome] so that [decision/action]?"),
+Q("Concept","Order the knowledge chain from the closing slide:",["Knowledge → Data → Decisions → Information","Raw Data → Information → Knowledge → Better Decisions","Information → Raw Data → Decisions → Knowledge","Raw Data → Decisions → Knowledge → Information"],1,"Data becomes valuable only when it helps people make better decisions."),
+
+Q("Situation","An online store has purchase records with no categories and wants natural customer segments for campaigns. Which question type?",["Regression","Classification","Clustering","Reinforcement learning"],2,"Finding group structure without labels is clustering (K-Means, hierarchical)."),
+Q("Situation","A bank wants to predict the peso amount each customer will spend next month. Which type?",["Classification","Regression","Anomaly detection","Clustering"],1,"The answer is a number → 'How much?' → regression."),
+Q("Situation","A factory wants to know whether each PPE batch will meet the standard or not. Which type?",["Regression","Clustering","Classification","Reinforcement learning"],2,"Standard / Not Standard is a class label → classification."),
+Q("Situation","A security team wants to flag network traffic that looks very different from normal activity. Which type?",["Anomaly detection","Regression","Classification only","Clustering of customers"],0,"Detecting observations that deviate greatly from normal is anomaly detection (intrusion detection)."),
+Q("Situation","A warehouse robot improves its route by earning rewards for fast deliveries and penalties for collisions. Which type?",["Regression","Reinforcement learning","Supervised classification","Descriptive analytics"],1,"Trial and error with reward feedback is reinforcement learning (Q-Learning, Monte Carlo)."),
+Q("Situation","A school wants to predict final-grade risk. Which data is most relevant?",["Favorite color and shoe size","Attendance, quiz scores, and LMS activity","Student's home décor","Cafeteria menu"],1,"Data must match the problem: attendance and LMS activity relate to grade risk."),
+Q("Situation","A team samples only one class section to draw conclusions about all programs. What is the main issue?",["Data doesn't match the problem","Sample may not represent reality","Data is too clean","Model is too simple"],1,"Step 1.2: a single class may not represent all year levels or programs."),
+Q("Situation","Your dataset merges three sources, with duplicates, typos, and missing values. What next?",["Train the model immediately","Integrate and clean the data (Step 2.2) before modeling","Delete the dataset","Present results to the dean"],1,"Noisy, multi-source data must be integrated and cleaned before modeling."),
+Q("Situation","An analyst jumps straight to a neural network without examining the data. What was skipped?",["Exploring the data (Step 3) and starting from the problem","Nothing","Ethics approval only","Visualization colors"],0,"Exploration prevents blind modeling; begin with the problem, not the algorithm."),
+Q("Situation","A manager says: 'We need to reduce customer complaints.' Which is the best refined data mining question?",["'Why are customers upset?'","'Can order history, delivery time, and support tickets predict customers likely to complain so that the team can intervene early?'","'Let's analyze complaints.'","'Complaints are bad.'"],1,"It names variables, a prediction goal, and a decision, matching the template."),
+Q("Situation","Which question is a proper data mining formulation?",["'How do I know if someone is infected?'","'Can age, blood type, location, and travel history predict infection risk?'","'Is infection bad?'","'Where is the hospital?'"],1,"Data mining links input variables to a predicted outcome; the first is diagnosis/testing."),
+Q("Situation","You must show four branches' sales to executives to see which is highest. Which visualization question?",["Comparison","Composition","Distribution","Relationship"],0,"'Which item or group is higher?' is Comparison."),
+Q("Situation","The message is already clear and a chart must guide executives' decision. Which visualization purpose?",["Explore","Communicate","Clean","Cluster"],1,"Communicate when the message is clear; explore when the audience still needs to inspect the data."),
+Q("Situation","You find a pattern in one class and say 'this may generalize to similar classes.' This is:",["Descriptive analytics","Inferential analytics","Data cleaning","Anomaly detection"],1,"Inferential analytics uses sample evidence to draw conclusions about a larger group."),
+Q("Situation","Your at-risk-student model is 85% accurate. How should you present it to the dean?",["As a guaranteed fact","With its confidence, limits, and assumptions","Hide the error rate","Only show the best chart"],1,"Step 6: results come with limits, assumptions, and confidence."),
+Q("Situation","Your student dataset has names and grades, and a vendor requests it. What best follows Step 7?",["Send it immediately","Apply the legal/privacy lens: protect confidential data, anonymize, and get proper permission","Post it on the LMS","Ignore privacy"],1,"Responsible data mining balances accuracy, usefulness, legality, and privacy."),
+Q("Situation","GCash has unlabeled transactions and wants to surface unusual ones. Which type?",["Anomaly detection","Regression","Reinforcement learning","Descriptive only"],0,"No fraud labels plus 'unusual' → anomaly detection. With labeled fraud/legit data → classification."),
+Q("Situation","An app learns which notification to send by observing user responses and maximizing engagement over time. Which type?",["Clustering","Regression","Reinforcement learning","Classification"],2,"'What should be done next?' learned from feedback and reward → reinforcement learning."),
+Q("Situation","A domain expert (e.g., a teacher) joins your data mining team. Their role is to:",["Write all the code","Help interpret the problem and decide what is practical","Replace the data","Approve the algorithm name"],1,"Data science is a team sport: domain experts interpret and judge practicality."),
+Q("Clustering","In clustering, a cluster is best described as:",["A group of objects where similar objects are together and dissimilar ones are in other groups","A single labeled class given in advance","A numeric prediction","A database table"],0,"Similar objects go in the same cluster; dissimilar objects go in different clusters."),
+Q("Clustering","Which is NOT one of the six clustering method categories?",["Partitioning","Density-based","Reward-based","Grid-based"],2,"The six are partitioning, hierarchical, density-based, grid-based, model-based, and constraint-based."),
+Q("Clustering","Which is NOT a stated requirement of clustering in data mining?",["Scalability","Interpretability","Handling noisy data","Requiring all clusters to be spherical"],3,"Clusters of arbitrary shape should be discoverable; being limited to spherical clusters is a weakness."),
+Q("Clustering","In the partitioning method with n objects and k partitions, which rule holds?",["k must be greater than n","Each object may belong to many groups","Each group has at least one object and each object belongs to exactly one group","Groups may be empty"],2,"The conditions are k ≤ n, non-empty groups, and each object in exactly one group."),
+Q("Clustering","Which approach starts with every object as its own group and merges them?",["Divisive (top-down)","Agglomerative (bottom-up)","Grid-based","Constraint-based"],1,"Agglomerative is bottom-up; divisive starts with everything in one cluster and splits."),
+Q("Clustering","What is the main drawback of hierarchical clustering?",["It cannot use distance","Merges or splits can never be undone","It always needs labels","It only handles numbers"],1,"It is rigid: once merging or splitting is done, it cannot be undone."),
+Q("Clustering","Which method grows a cluster while neighborhood density exceeds a threshold?",["Grid-based","Partitioning","Density-based","Divisive"],2,"Density-based clustering keeps growing a cluster as long as its neighborhood density exceeds a threshold."),
+Q("Clustering","Which clustering method's speed depends on the number of grid cells, not the number of data objects?",["Model-based","Grid-based","Hierarchical","Partitioning"],1,"Grid-based methods quantize space into cells, giving fast processing time."),
+Q("Clustering","Which method hypothesizes a model for each cluster and can determine the number of clusters automatically?",["Model-based","Divisive","Grid-based","Partitioning"],0,"Model-based clustering fits a model per cluster and can estimate the number of clusters using standard statistics."),
+Q("Clustering","Which method lets users guide clustering with their own expectations or application requirements?",["Density-based","Agglomerative","Constraint-based","Grid-based"],2,"Constraint-based clustering incorporates user- or application-oriented constraints interactively."),
+Q("Situation","A real-estate site wants to group houses by type, value, and geographic location, with no predefined categories. Which task?",["Regression","Cluster analysis","Reinforcement learning","Descriptive only"],1,"Grouping houses by similarity is a classic cluster analysis application."),
+Q("Situation","Your algorithm only finds small round clusters, but real customer groups are irregular. Which requirement is not met?",["Discovery of clusters with arbitrary shape","Interpretability","Scalability","Privacy"],0,"Distance-bound algorithms tend to find spherical clusters; arbitrary-shape discovery is required."),
+Q("Situation","You must cluster millions of records on a huge database and need very fast results using a quantized space. Which method fits best?",["Grid-based","Divisive hierarchical","Constraint-based","Model-based"],0,"Grid-based methods process quickly because they depend on cell counts, not object counts."),
+Q("Situation","Your hierarchical clustering merged two groups by mistake and the analyst wants to undo it. What is the issue?",["It can be undone anytime","Hierarchical methods are rigid; merges and splits can't be undone","Hierarchical methods have no merges","Only grid methods merge"],1,"To improve quality, analyze linkages carefully or combine agglomeration with micro-then-macro clustering."),
+Q("Situation","A marketer wants customer groups, but the company insists clusters respect rules such as minimum group size and VIP separation. Which method?",["Constraint-based","Density-based","Divisive","Grid-based"],0,"Constraint-based clustering incorporates user or application requirements."),
+Q("Classification","In a classification tree, what do you do at each node?",["Delete the node","Answer the question and follow that branch until you reach a leaf with the prediction","Average all values","Group objects without labels"],1,"The leaf gives the predicted class for the unknown data instance."),
+Q("Classification","Which is an advantage of a classification tree?",["It needs huge amounts of information about the data","It can be very accurate and informative without a lot of information about the data","It never overfits","It only predicts numbers"],1,"A classification tree doesn't require much information about the data to be accurate and informative."),
+Q("Classification","What is the purpose of a training set?",["To test the final model","To build the model using data with known output values","To store unknown values","To label clusters"],1,"The model is built from known outputs, then new unknown data points are run through it."),
+Q("Classification","Why do we create a separate test set?",["To make the tree bigger","To check accuracy doesn't drop on new data, since models should predict future unknowns","To replace the training set","To remove all errors"],1,"A model that only predicts known values perfectly is overfitted."),
+Q("Classification","What is pruning?",["Adding branches to a tree","Removing branches of a classification tree to reduce overfitting","Sorting transactions","Scaling coefficients"],1,"Pruning keeps the tree simple while staying accurate: the trade-off."),
+Q("Classification","A false positive is when the model predicts:",["Negative but the actual is positive","Positive but the actual is negative","Positive and the actual is positive","Negative and the actual is negative"],1,"A false negative is the reverse: predicted negative, actual positive."),
+Q("Association","Association analysis is used to:",["Predict a continuous number","Discover rules showing the likely occurrence of an item based on other items in a transaction","Reduce overfitting","Group customers without rules"],1,"It uses transactions to find rules like {Milk, Diaper} -> {Beer}."),
+Q("Association","In the rule {Milk, Diaper} -> {Beer}, X is:",["{Beer}","{Milk, Diaper}","The transaction","The support"],1,"The rule has the form X -> Y; X = {Milk, Diaper}, Y = {Beer}."),
+Q("Association","Apriori was proposed by:",["Agrawal and Srikant, 1994","Breiman, 2001","Ridge and Lasso, 1970","Turing, 1950"],0,"It is applied in market basket analysis over transactional databases."),
+Q("Association","Apriori's approach is best described as:",["Top-down splitting","Bottom-up: extend frequent subsets one item at a time (candidate generation) and test them","Random guessing","Trial and error with rewards"],1,"It terminates when no further successful extensions are found."),
+Q("Association","Why does Apriori prune candidates that have an infrequent sub pattern?",["Because of the downward closure lemma: any subset of a frequent item set must be frequent","To add noise","To make rules longer","Because trees must be shallow"],0,"If a subset is infrequent, the larger candidate can't be frequent."),
+Q("Regression","Which metrics quantify regression error?",["MSE and RMSE","Support and confidence","Gini and entropy","Precision only"],0,"They measure the difference between predicted and actual values."),
+Q("Regression","Multicollinearity occurs when:",["The target is categorical","Two or more predictor variables are highly correlated","Residuals are zero","There are no outliers"],1,"It makes coefficients hard to estimate accurately."),
+Q("Regression","Underfitting means the regression model:",["Is too complex and captures noise","Is too simple and performs poorly on both training and test data","Has zero residuals","Uses a lasso penalty"],1,"Overfitting is the opposite: too complex, poor generalization on unseen data."),
+Q("Regression","Residuals are:",["Differences between observed and predicted values","The predictor variables","The coefficients","The outliers only"],0,"They help assess goodness of fit and spot patterns of model inadequacy."),
+Q("Regression","Which regularization technique can force some coefficients to exactly zero?",["Ridge","Lasso","Polynomial","Simple linear"],1,"Lasso gives feature selection; ridge only shrinks coefficients."),
+Q("Regression","Random forest regression outputs:",["A single tree's prediction","The average prediction of many decision trees","A hyperplane margin","A straight line"],1,"It is an ensemble, robust to overfitting, and captures nonlinear relationships."),
+Q("Regression","Which algorithm finds the hyperplane maximizing the margin in a higher-dimensional space?",["Support Vector Regression","Ridge regression","Decision tree regression","Simple regression"],0,"SVR is effective in high-dimensional spaces and with outliers."),
+Q("Situation","A hospital heart-monitor model has a few false negatives. How strict should the acceptable error rate be?",["Very high tolerance","Extremely low, because the stakes are high","Doesn't matter","Same as a made-up article dataset"],1,"The acceptable error percentage depends on the application's stakes."),
+Q("Situation","Your tree gets 100% accuracy on training data but much lower on new data. What is happening, and what helps?",["Underfitting; add more branches","Overfitting; prune the tree and validate with a test set","Multicollinearity; add predictors","Nothing is wrong"],1,"Pruning balances simplicity and accuracy."),
+Q("Situation","A supermarket finds customers who buy milk and diapers often also buy beer. Which technique is this?",["Regression","Association analysis (market basket analysis)","Reinforcement learning","Clustering by shape"],1,"The pattern is an association rule found with an algorithm like Apriori."),
+Q("Situation","You want to predict house prices from square footage, bedrooms, and location. Which regression type?",["Simple regression","Multiple regression","Classification","Clustering"],1,"Two or more independent variables means multiple regression."),
+Q("Situation","You predict sales from advertising spend alone. Which regression type?",["Multiple regression","Simple regression","Nonlinear regression only","Lasso only"],1,"One dependent variable predicted from one independent variable."),
+Q("Situation","Plant growth over time follows an S-shaped (logistic) curve. Which regression type?",["Simple linear","Nonlinear regression","Classification","Association analysis"],1,"Nonlinear regression is used when the relationship isn't linear."),
+Q("Situation","You have many predictors for customer churn and want to identify the most important ones by shrinking weak ones to zero. Which method?",["Ridge regression","Lasso regression","Simple regression","Polynomial regression"],1,"Lasso's feature-selection property simplifies the model and improves interpretability."),
+Q("Situation","A retailer forecasts sales from ad spending, seasonality, and demographics, and wants a robust model that resists overfitting. Which method?",["Random forest regression","Simple linear regression","Apriori","Single decision tree only"],0,"Random forests average many trees and capture complex interactions."),
+Q("Situation","A projectile's trajectory over time curves rather than forming a straight line. Which algorithm extends linear regression to fit it?",["Polynomial regression","Lasso","Apriori","Constraint-based clustering"],0,"Polynomial regression fits a polynomial function instead of a straight line."),
+];
+
+/* ---------------- FLASHCARDS LOGIC ---------------- */
+let order = cards.map((_,i)=>i);
+let idx = 0;
+let seen = new Set();
+
+const cardFront = document.getElementById('cardFront');
+const cardBack = document.getElementById('cardBack');
+const flashcard = document.getElementById('flashcard');
+const cardCount = document.getElementById('cardCount');
+const cardTopicChip = document.getElementById('cardTopicChip');
+const dotsEl = document.getElementById('dots');
+const gaugeFill = document.getElementById('gaugeFill');
+
+function buildDots(){
+  dotsEl.innerHTML = '';
+  order.forEach((_, i)=>{
+    const d = document.createElement('div');
+    d.className = 'dot';
+    dotsEl.appendChild(d);
+  });
+}
+
+function renderCard(){
+  const c = cards[order[idx]];
+  cardFront.textContent = c.front;
+  cardBack.textContent = c.back;
+  cardTopicChip.textContent = c.topic;
+  cardCount.textContent = (idx+1) + ' / ' + order.length;
+  flashcard.classList.remove('flipped');
+  seen.add(idx);
+  [...dotsEl.children].forEach((d,i)=>{
+    d.className = 'dot' + (i===idx ? ' current' : (seen.has(i) ? ' seen' : ''));
+  });
+  gaugeFill.style.height = Math.round(((idx+1)/order.length)*100) + '%';
+}
+
+flashcard.addEventListener('click', ()=> flashcard.classList.toggle('flipped'));
+document.getElementById('flipBtn').addEventListener('click', ()=> flashcard.classList.toggle('flipped'));
+document.getElementById('nextCard').addEventListener('click', ()=>{
+  idx = (idx+1) % order.length;
+  renderCard();
+});
+document.getElementById('prevCard').addEventListener('click', ()=>{
+  idx = (idx-1+order.length) % order.length;
+  renderCard();
+});
+document.getElementById('shuffleCard').addEventListener('click', ()=>{
+  for(let i=order.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [order[i],order[j]] = [order[j],order[i]];
+  }
+  idx = 0; seen = new Set();
+  buildDots();
+  renderCard();
+});
+
+buildDots();
+renderCard();
+
+/* ---------------- QUIZ LOGIC ---------------- */
+let qIdx = 0;
+let score = 0;
+let answered = false;
+let active = [];
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function startQuiz(){
+  active = shuffle(quiz).map(item=>{
+    const idxs = shuffle(item.options.map((_,i)=>i));
+    return {...item, options: idxs.map(i=>item.options[i]), correct: idxs.indexOf(item.correct)};
+  });
+  qIdx = 0; score = 0;
+  quizActive.style.display = 'block';
+  quizResult.style.display = 'none';
+  renderQuiz();
+}
+
+const quizQ = document.getElementById('quizQ');
+const quizOptions = document.getElementById('quizOptions');
+const quizExplain = document.getElementById('quizExplain');
+const quizCount = document.getElementById('quizCount');
+const quizTag = document.getElementById('quizTag');
+const quizNext = document.getElementById('quizNext');
+const quizProgressFill = document.getElementById('quizProgressFill');
+const quizActive = document.getElementById('quizActive');
+const quizResult = document.getElementById('quizResult');
+
+function renderQuiz(){
+  answered = false;
+  const item = active[qIdx];
+  quizTag.textContent = item.tag;
+  quizCount.textContent = (qIdx+1) + ' / ' + quiz.length;
+  quizProgressFill.style.width = Math.round((qIdx/quiz.length)*100) + '%';
+  quizQ.textContent = item.q;
+  quizExplain.classList.remove('show');
+  quizExplain.innerHTML = '';
+  quizNext.disabled = true;
+  quizNext.textContent = (qIdx === quiz.length-1) ? 'See Results →' : 'Next Question →';
+
+  quizOptions.innerHTML = '';
+  const letters = ['A','B','C','D'];
+  item.options.forEach((opt, i)=>{
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.innerHTML = '<span class="k">' + letters[i] + '</span><span>' + opt + '</span>';
+    btn.addEventListener('click', ()=> selectAnswer(i));
+    quizOptions.appendChild(btn);
+  });
+}
+
+function selectAnswer(i){
+  if(answered) return;
+  answered = true;
+  const item = active[qIdx];
+  const opts = [...quizOptions.children];
+  opts.forEach((o,idx2)=>{
+    o.disabled = true;
+    if(idx2 === item.correct) o.classList.add('correct');
+    else if(idx2 === i) o.classList.add('incorrect');
+  });
+  if(i === item.correct) score++;
+  quizExplain.innerHTML = item.explain;
+  quizExplain.classList.add('show');
+  quizNext.disabled = false;
+}
+
+quizNext.addEventListener('click', ()=>{
+  if(qIdx < quiz.length - 1){
+    qIdx++;
+    renderQuiz();
+  } else {
+    quizProgressFill.style.width = '100%';
+    showResults();
+  }
+});
+
+function showResults(){
+  quizActive.style.display = 'none';
+  quizResult.style.display = 'block';
+  document.getElementById('scoreNum').textContent = score + '/' + quiz.length;
+  const pct = Math.round((score/quiz.length)*100);
+  let msg = '';
+  if(pct === 100) msg = "Pure gold — perfect score.";
+  else if(pct >= 80) msg = "Strong vein of understanding. A quick review will seal it.";
+  else if(pct >= 50) msg = "Decent ore, needs more refining — revisit the flashcards.";
+  else msg = "Back to the flashcards before the next dig.";
+  document.getElementById('scoreMsg').textContent = msg;
+}
+
+document.getElementById('retryQuiz').addEventListener('click', ()=>{
+  qIdx = 0; score = 0;
+  quizActive.style.display = 'block';
+  startQuiz();
+});
+
+startQuiz();
+
+/* ---------------- TABS ---------------- */
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    const mode = tab.dataset.mode;
+    document.getElementById('panel-cards').classList.toggle('active', mode==='cards');
+    document.getElementById('panel-quiz').classList.toggle('active', mode==='quiz');
+  });
+});
+</script>
+</body>
+</html>
